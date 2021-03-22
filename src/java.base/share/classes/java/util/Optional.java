@@ -63,7 +63,93 @@ public final class Optional<T> {
     /**
      * Common instance for {@code empty()}.
      */
-    private static final Optional<?> EMPTY = new Optional<>(null);
+    private static final Optional<?> EMPTY = new Optional<>(null){
+        @Override
+        public TT get() {
+            throw new NoSuchElementException("No value present");
+        }
+
+        @Override
+        public boolean isPresent() {
+            return false;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return true;
+        }
+        
+        @Override
+        public void ifPresent(Consumer<? super TT> action) {
+            Objects.requireNonNull(action);
+            //Do nothing
+        }
+
+        @Override
+        public void ifPresentOrElse(Consumer<? super TT> action, Runnable emptyAction) {
+            Objects.requireNonNull(emptyAction);
+            Objects.requireNonNull(action);
+            emptyAction.run();
+        }
+        
+        @Override
+        public Optional<?> filter(Predicate<? super TT> predicate) {
+            Objects.requireNonNull(predicate);
+            return this;
+        }
+
+        @Override
+        public <U> Optional<U> map(Function<? super TT, ? extends U> mapper) {
+            Objects.requireNonNull(mapper);
+            return this;
+        }
+
+        @Override
+        public <U> Optional<U> flatMap(Function<? super TT, ? extends Optional<? extends U>> mapper) {
+            Objects.requireNonNull(mapper);
+            return this;
+        }
+
+        @Override
+        public Optional<U> or(Supplier<? extends Optional<? extends U>> supplier) {
+            Objects.requireNonNull(supplier);
+            @SuppressWarnings("unchecked")
+            Optional<U> r = (Optional<U>) supplier.get();
+            return Objects.requireNonNull(r);
+        }
+
+        @Override
+        public Stream<?> stream() {
+            return Stream.empty();
+        }
+
+        @Override
+        public TT orElse(TT other) {
+            return other;
+        }
+
+        @Override
+        public TT orElseGet(Supplier<? extends TT> supplier) {
+            Objects.requireNonNull(supplier);
+            return supplier.get();
+        }
+
+        @Override
+        public TT orElseThrow() {
+            throw new NoSuchElementException("No value present");
+        }
+
+        @Override
+        public <X extends Throwable> TT orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
+            Objects.requireNonNull(exceptionSupplier);
+            throw exceptionSupplier.get();
+        }
+
+        @Override
+        public String toString() {
+            return "Optional.empty";
+        }
+    };
 
     /**
      * If non-null, the value; if null, indicates no value is present
@@ -139,9 +225,6 @@ public final class Optional<T> {
      * @throws NoSuchElementException if no value is present
      */
     public T get() {
-        if (value == null) {
-            throw new NoSuchElementException("No value present");
-        }
         return value;
     }
 
@@ -151,7 +234,7 @@ public final class Optional<T> {
      * @return {@code true} if a value is present, otherwise {@code false}
      */
     public boolean isPresent() {
-        return value != null;
+        return true;
     }
 
     /**
@@ -162,7 +245,7 @@ public final class Optional<T> {
      * @since   11
      */
     public boolean isEmpty() {
-        return value == null;
+        return false;
     }
 
     /**
@@ -174,9 +257,8 @@ public final class Optional<T> {
      *         {@code null}
      */
     public void ifPresent(Consumer<? super T> action) {
-        if (value != null) {
-            action.accept(value);
-        }
+        Objects.requireNonNull(action);
+        action.accept(value);
     }
 
     /**
@@ -192,11 +274,9 @@ public final class Optional<T> {
      * @since 9
      */
     public void ifPresentOrElse(Consumer<? super T> action, Runnable emptyAction) {
-        if (value != null) {
-            action.accept(value);
-        } else {
-            emptyAction.run();
-        }
+        Objects.requireNonNull(action);
+        Objects.requireNonNull(emptyAction);
+        action.accept(value);
     }
 
     /**
@@ -212,11 +292,7 @@ public final class Optional<T> {
      */
     public Optional<T> filter(Predicate<? super T> predicate) {
         Objects.requireNonNull(predicate);
-        if (!isPresent()) {
-            return this;
-        } else {
-            return predicate.test(value) ? this : empty();
-        }
+        return predicate.test(value) ? this : empty();
     }
 
     /**
@@ -254,11 +330,7 @@ public final class Optional<T> {
      */
     public <U> Optional<U> map(Function<? super T, ? extends U> mapper) {
         Objects.requireNonNull(mapper);
-        if (!isPresent()) {
-            return empty();
-        } else {
-            return Optional.ofNullable(mapper.apply(value));
-        }
+        return Optional.ofNullable(mapper.apply(value));
     }
 
     /**
@@ -282,13 +354,9 @@ public final class Optional<T> {
      */
     public <U> Optional<U> flatMap(Function<? super T, ? extends Optional<? extends U>> mapper) {
         Objects.requireNonNull(mapper);
-        if (!isPresent()) {
-            return empty();
-        } else {
-            @SuppressWarnings("unchecked")
-            Optional<U> r = (Optional<U>) mapper.apply(value);
-            return Objects.requireNonNull(r);
-        }
+        @SuppressWarnings("unchecked")
+        Optional<U> r = (Optional<U>) mapper.apply(value);
+        return Objects.requireNonNull(r);
     }
 
     /**
@@ -306,13 +374,7 @@ public final class Optional<T> {
      */
     public Optional<T> or(Supplier<? extends Optional<? extends T>> supplier) {
         Objects.requireNonNull(supplier);
-        if (isPresent()) {
-            return this;
-        } else {
-            @SuppressWarnings("unchecked")
-            Optional<T> r = (Optional<T>) supplier.get();
-            return Objects.requireNonNull(r);
-        }
+        return this;
     }
 
     /**
@@ -331,11 +393,7 @@ public final class Optional<T> {
      * @since 9
      */
     public Stream<T> stream() {
-        if (!isPresent()) {
-            return Stream.empty();
-        } else {
-            return Stream.of(value);
-        }
+        return Stream.of(value);
     }
 
     /**
@@ -347,7 +405,7 @@ public final class Optional<T> {
      * @return the value, if present, otherwise {@code other}
      */
     public T orElse(T other) {
-        return value != null ? value : other;
+        return value;
     }
 
     /**
@@ -361,7 +419,8 @@ public final class Optional<T> {
      *         function is {@code null}
      */
     public T orElseGet(Supplier<? extends T> supplier) {
-        return value != null ? value : supplier.get();
+        Objects.requireNonNull(supplier);
+        return value;
     }
 
     /**
@@ -373,9 +432,6 @@ public final class Optional<T> {
      * @since 10
      */
     public T orElseThrow() {
-        if (value == null) {
-            throw new NoSuchElementException("No value present");
-        }
         return value;
     }
 
@@ -397,11 +453,8 @@ public final class Optional<T> {
      *          supplying function is {@code null}
      */
     public <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
-        if (value != null) {
-            return value;
-        } else {
-            throw exceptionSupplier.get();
-        }
+        Objects.requireNonNull(exceptionSupplier);
+        return value;
     }
 
     /**
@@ -457,8 +510,6 @@ public final class Optional<T> {
      */
     @Override
     public String toString() {
-        return value != null
-            ? String.format("Optional[%s]", value)
-            : "Optional.empty";
+        return String.format("Optional[%s]", value);
     }
 }
